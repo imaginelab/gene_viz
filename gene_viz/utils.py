@@ -187,12 +187,12 @@ def read_ply(file):
     end_header = ply_df[ply_df[0].str.contains('end_header')].index.tolist()[0]
     # read vertex coordinates into dict
     vertex_df = pd.read_csv(file, skiprows=range(end_header + 1),
-                            nrows=number_vertices, sep='\s*', header=None,
+                            nrows=number_vertices, sep=r'\s+', header=None,
                             engine='python')
     vertex_array = np.array(vertex_df)
     # read face indices into dict
     face_df = pd.read_csv(file, skiprows=range(end_header + number_vertices + 1),
-                          nrows=number_faces, sep='\s*', header=None,
+                          nrows=number_faces, sep=r'\s+', header=None,
                           engine='python')
     face_array = np.array(face_df.iloc[:, 1:4])
 
