@@ -14,7 +14,7 @@ def interpolate(
     samples,
     sample_coords,
     eval_coords,
-    method='linear',
+    method='knn',
     **kwargs
 ):
     """
