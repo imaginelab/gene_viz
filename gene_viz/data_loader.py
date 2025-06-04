@@ -6,6 +6,10 @@ from gene_viz.utils import get_michack_data_path,get_data_path
 
 #turn this into a class tha loads the data once on initialisation
 #and then returns coordinates and samples for a given gene.
+
+
+
+
 def load_data(gene_name='PVALB',flip_lr=True):
     """
     Load the Michack project data, including expression and coordinates.
@@ -29,7 +33,7 @@ def load_data(gene_name='PVALB',flip_lr=True):
     coords_file = os.path.join(data_path, 'coords_data.csv')
     
     if not os.path.exists(expression_file) or not os.path.exists(coords_file):
-        raise FileNotFoundError("Cached data files not found. Please run the data fetching script first.")
+        raise FileNotFoundError("Cached data files not found. Please download the data first.")
     
     expression = pd.read_csv(expression_file, index_col=0)
     coords = pd.read_csv(coords_file, index_col=0)
@@ -49,3 +53,5 @@ def load_data(gene_name='PVALB',flip_lr=True):
         samples = stacked_samples
     
     return sample_coords, samples
+
+
