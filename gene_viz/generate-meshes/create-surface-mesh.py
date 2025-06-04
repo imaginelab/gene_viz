@@ -4,6 +4,19 @@ from skimage import measure
 import pyvista as pv
 import pandas as pd
 import os
+import sys
+# Get the current file's directory
+# os.chdir('/Users/lenadorfschmidt/Documents/KCL/MIC-HACK2025/gene_viz/gene_viz/generate-meshes')
+current_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(current_dir)
+
+# parent_dir = '/Users/lenadorfschmidt/Documents/KCL/MIC-HACK2025/gene_viz/gene_viz'
+# sys.path.append(parent_dir)
+# Add the parent directory so we can use utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import save_mesh_geometry
+
+
 
 def generate_mesh(data, label, label_name):
     """ Generate a mesh for a specific label in the segmentation data.
@@ -33,10 +46,13 @@ def generate_mesh(data, label, label_name):
 
     return mesh, smoothed_mesh
 
-plot_it=False
+plot_it=True
 
-if not os.path.exists('../../../mesh-png'):
-    os.makedirs('../../../mesh-png')
+if not os.path.exists('mesh-png'):
+    os.makedirs('mesh-png')
+
+if not os.path.exists('mesh-ply'):
+    os.makedirs('mesh-ply')
 
 # Load segmentation
 nii = nib.load("aparc+aseg.mni152.v2.nii")
@@ -63,10 +79,17 @@ for label in np.unique(data).astype(int):
 
     mesh, smoothed_mesh = generate_mesh(data, label, label_name)
 
+    surf_dict = {
+        'coords': np.array(smoothed_mesh.points),  # numpy array of points (N,3)
+        'faces': np.array(smoothed_mesh.faces.reshape(-1, 4)[:, 1:] ) # skip the count number before each face
+    }
+
+    # Save mesh to file
+    outpath='mesh-ply/' + label_name + '_meshfile.ply'
+    save_mesh_geometry(outpath, surf_dict)
+
     if plot_it==True:
         # Save mesh to file
-        mesh.save("mesh-ply/" + label_name + "smoothed_mesh.ply")
-        smoothed_mesh.save("mesh-ply/" + label_name + "smoothed_mesh_smoothed.ply")
         plotter = pv.Plotter(off_screen=True)
         plotter.add_mesh(mesh)
         plotter.screenshot("mesh-png/" + label_name + "smoothed_mesh.png")
@@ -76,6 +99,9 @@ for label in np.unique(data).astype(int):
         plotter.add_mesh(smoothed_mesh)
         plotter.screenshot("mesh-png/" + label_name + "smoothed_mesh_smoothed.png")
         plotter.close()
+
+
+
 
 
 print('Done')
