@@ -57,8 +57,11 @@ def load_mesh_geometry(surf_mesh):
             coords, faces, volume_info  = nb.freesurfer.io.read_geometry(surf_mesh, read_metadata=True)
             return {'coords':coords,'faces':faces,'volume_info': volume_info}
         elif surf_mesh.endswith('gii'):
-            coords, faces = nb.gifti.read(surf_mesh).getArraysFromIntent(nb.nifti1.intent_codes['NIFTI_INTENT_POINTSET'])[0].data, \
-                            nb.gifti.read(surf_mesh).getArraysFromIntent(nb.nifti1.intent_codes['NIFTI_INTENT_TRIANGLE'])[0].data
+            gifti_surface_file = nb.load(surf_mesh)
+
+            coords, faces = gifti_surface_file.darrays[0].data, gifti_surface_file.darrays[1].data
+            return {'coords':coords,'faces':faces}
+                            
         elif surf_mesh.endswith('vtk'):
             coords, faces, _ = read_vtk(surf_mesh)
         elif surf_mesh.endswith('ply'):
