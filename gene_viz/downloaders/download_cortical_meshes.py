@@ -11,6 +11,9 @@ def download_cortical_meshes(hemisphere='L'):
     filename = "fs_LR.32k.{}.pial.surf.gii"
     filename = filename.format(hemisphere.upper())
     data_path = get_data_path()
+    # Ensure the data path exists
+    if not data_path:
+        os.makedirs(data_path, exist_ok=True)
     file_path = os.path.join(data_path, filename)
 
     if os.path.exists(file_path):
