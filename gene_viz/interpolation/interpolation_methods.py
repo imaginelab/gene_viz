@@ -78,7 +78,8 @@ def exponential_interpolation(sample_coords, sample_values, eval_coords, epsilon
     return rbf(*eval_coords.T)
 
 
-def knn_interpolation(sample_coords, sample_values, eval_coords, n_neighbors=10, weighting='inverse', **kwargs):
+def knn_interpolation(sample_coords, sample_values, eval_coords, n_neighbors=10, weighting='power',
+                      power=2, **kwargs):
     """
     K-Nearest Neighbors interpolation with configurable weighting functions.
 
@@ -177,7 +178,7 @@ class ExactGPModel(gpytorch.models.ExactGP):
 
 def gp_interpolation(sample_coords, sample_values, eval_coords, kernel='RBF', training_iter=50, lr=0.1, use_gpu=False):
     """
-    Gaussian Process interpolation using GPyTorch.
+    Gaussian Process interpolation using GPyTorch, with MPS support on macOS M1/M2.
 
     Parameters
     ----------
@@ -194,15 +195,22 @@ def gp_interpolation(sample_coords, sample_values, eval_coords, kernel='RBF', tr
     lr : float, optional
         Learning rate for optimizer. Default: 0.1.
     use_gpu : bool, optional
-        If True and GPU available, run training on GPU. Default: False.
+        If True and a GPU or MPS backend is available, run training on that device. Default: False.
 
     Returns
     -------
     interp_values : ndarray, shape (n_eval,)
         Predicted mean values at eval_coords.
     """
+    # Determine device: prioritize MPS on macOS, then CUDA, then CPU
+    if use_gpu and torch.backends.mps.is_available():
+        device = torch.device('mps')
+    elif use_gpu and torch.cuda.is_available():
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
+    
     # Convert to torch tensors
-    device = torch.device('cuda') if (use_gpu and torch.cuda.is_available()) else torch.device('cpu')
     train_x = torch.tensor(sample_coords, dtype=torch.float32).to(device)
     train_y = torch.tensor(sample_values, dtype=torch.float32).to(device)
     test_x = torch.tensor(eval_coords, dtype=torch.float32).to(device)
@@ -229,4 +237,4 @@ def gp_interpolation(sample_coords, sample_values, eval_coords, kernel='RBF', tr
 
     with torch.no_grad(), gpytorch.settings.fast_pred_var():
         observed_pred = likelihood(model(test_x))
-        return observed_pred.mean.cpu().numpy()
+        return observed_pred.mean.to('cpu').numpy()

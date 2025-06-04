@@ -6,7 +6,7 @@ from .interpolation_methods import (
     spline_interpolation,
     exponential_interpolation,
     thin_plate_interpolation,
-    knn_interpolation,
+    knn_interpolation,gp_interpolation,
 )
 
 
@@ -29,7 +29,7 @@ def interpolate(
     eval_coords : array-like, shape (n_eval, 3)
         Coordinates where interpolation is evaluated.
     method : str, optional
-        Interpolation method: 'linear', 'nearest', 'spline', 'exponential', 'thin_plate', or 'knn'. Default is 'linear'.
+        Interpolation method: 'linear', 'nearest', 'spline', 'exponential', 'thin_plate', 'knn', or 'gp'. Default is 'linear'.
     **kwargs : additional keyword arguments to pass to the method-specific function.
 
     Returns
@@ -37,12 +37,10 @@ def interpolate(
     interp_values : ndarray, shape (n_eval, n_features)
         Interpolated expression values at evaluation coordinates.
     """
-    # Validate inputs
     sample_coords = validate_coordinates(sample_coords, dim=3)
     eval_coords = validate_coordinates(eval_coords, dim=3)
     samples = validate_samples(samples)
 
-    # Dispatch based on method
     method = method.lower()
     if method == 'linear':
         func = linear_interpolation
@@ -56,10 +54,11 @@ def interpolate(
         func = thin_plate_interpolation
     elif method == 'knn':
         func = knn_interpolation
+    elif method == 'gp':
+        func = gp_interpolation
     else:
         raise ValueError(f"Unknown interpolation method: {method}")
 
-    # If multiple features (genes), interpolate each separately
     if samples.ndim == 2 and samples.shape[1] > 1:
         results = []
         for i in range(samples.shape[1]):
