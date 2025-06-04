@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 from gene_viz.utils import get_michack_data_path,get_data_path
 
+#turn this into a class tha loads the data once on initialisation
+#and then returns coordinates and samples for a given gene.
 def load_data(gene_name='PVALB',flip_lr=True):
     """
     Load the Michack project data, including expression and coordinates.

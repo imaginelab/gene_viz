@@ -2,8 +2,7 @@ import numpy as np
 from scipy.interpolate import griddata, NearestNDInterpolator, Rbf, LinearNDInterpolator, CloughTocher2DInterpolator
 
 from sklearn.neighbors import NearestNeighbors
-import torch
-import gpytorch
+
 
 def linear_interpolation(sample_coords, sample_values, eval_coords):
     """
@@ -158,83 +157,3 @@ def knn_interpolation(sample_coords, sample_values, eval_coords, n_neighbors=10,
 
 #others
 # GP Regression interpolation using GPyTorch
-class ExactGPModel(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood, kernel='RBF'):
-        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
-        if kernel == 'RBF':
-            self.mean_module = gpytorch.means.ConstantMean()
-            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
-        elif kernel == 'Matern':
-            self.mean_module = gpytorch.means.ConstantMean()
-            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel())
-        else:
-            raise ValueError(f"Unsupported kernel: {kernel}")
-
-    def forward(self, x):
-        mean_x = self.mean_module(x)
-        covar_x = self.covar_module(x)
-        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-
-
-def gp_interpolation(sample_coords, sample_values, eval_coords, kernel='RBF', training_iter=50, lr=0.1, use_gpu=False):
-    """
-    Gaussian Process interpolation using GPyTorch, with MPS support on macOS M1/M2.
-
-    Parameters
-    ----------
-    sample_coords : array-like, shape (n_samples, 3)
-        Coordinates of sparse samples.
-    sample_values : array-like, shape (n_samples,)
-        Expression values at sample coordinates.
-    eval_coords : array-like, shape (n_eval, 3)
-        Coordinates where interpolation is evaluated.
-    kernel : str, optional
-        Kernel type: 'RBF' or 'Matern'. Default: 'RBF'.
-    training_iter : int, optional
-        Number of training iterations. Default: 50.
-    lr : float, optional
-        Learning rate for optimizer. Default: 0.1.
-    use_gpu : bool, optional
-        If True and a GPU or MPS backend is available, run training on that device. Default: False.
-
-    Returns
-    -------
-    interp_values : ndarray, shape (n_eval,)
-        Predicted mean values at eval_coords.
-    """
-    # Determine device: prioritize MPS on macOS, then CUDA, then CPU
-    if use_gpu and torch.backends.mps.is_available():
-        device = torch.device('mps')
-    elif use_gpu and torch.cuda.is_available():
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
-    
-    # Convert to torch tensors
-    train_x = torch.tensor(sample_coords, dtype=torch.float32).to(device)
-    train_y = torch.tensor(sample_values, dtype=torch.float32).to(device)
-    test_x = torch.tensor(eval_coords, dtype=torch.float32).to(device)
-
-    # Likelihood and model
-    likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device)
-    model = ExactGPModel(train_x, train_y, likelihood, kernel=kernel).to(device)
-
-    model.train()
-    likelihood.train()
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
-
-    for _ in range(training_iter):
-        optimizer.zero_grad()
-        output = model(train_x)
-        loss = -mll(output, train_y)
-        loss.backward()
-        optimizer.step()
-
-    model.eval()
-    likelihood.eval()
-
-    with torch.no_grad(), gpytorch.settings.fast_pred_var():
-        observed_pred = likelihood(model(test_x))
-        return observed_pred.mean.to('cpu').numpy()
