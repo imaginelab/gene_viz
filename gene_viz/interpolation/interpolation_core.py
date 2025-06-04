@@ -6,7 +6,7 @@ from .interpolation_methods import (
     spline_interpolation,
     exponential_interpolation,
     thin_plate_interpolation,
-    knn_interpolation,gp_interpolation,
+    knn_interpolation,
 )
 
 
@@ -29,7 +29,7 @@ def interpolate(
     eval_coords : array-like, shape (n_eval, 3)
         Coordinates where interpolation is evaluated.
     method : str, optional
-        Interpolation method: 'linear', 'nearest', 'spline', 'exponential', 'thin_plate', 'knn', or 'gp'. Default is 'linear'.
+        Interpolation method: 'linear', 'nearest', 'spline', 'exponential', 'thin_plate', 'knn'. Default is 'linear'.
     **kwargs : additional keyword arguments to pass to the method-specific function.
 
     Returns
@@ -54,8 +54,6 @@ def interpolate(
         func = thin_plate_interpolation
     elif method == 'knn':
         func = knn_interpolation
-    elif method == 'gp':
-        func = gp_interpolation
     else:
         raise ValueError(f"Unknown interpolation method: {method}")
 
