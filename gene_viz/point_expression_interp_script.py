@@ -11,6 +11,7 @@ from abagen.utils import flatten_dict
 import nibabel as nb
 
 from scipy.interpolate import LinearNDInterpolator
+from scipy.spatial import cKDTree
 
 # --- Set up paths ---
 directory1 = 'michack_project_data'
@@ -76,48 +77,55 @@ def interpolate_expression_3d(coords_df, expression_series):
     """
     # Join data on well_id
     df = coords_df.join(expression_series.rename("expression"), how='inner')
-
     # Extract arrays for interpolation
     points = df[['x', 'y', 'z']].values
     values = df['expression'].values
-
     # Create interpolator
     interp_func = LinearNDInterpolator(points, values)
 
     return interp_func
 
-def make_3d_interpolated_grid(interp_func, 
-                              x_range, y_range, z_range, 
-                              resolution=50):
+def make_3d_interpolated_grid_mni(interp_func, mni_img, resolution=1):
     """
-    Generate a 3D grid of interpolated gene expression values.
+    Generate a 3D grid of interpolated gene expression values aligned to MNI image.
 
     Parameters:
         interp_func (callable): Interpolator function from interpolate_expression_3d
-        x_range, y_range, z_range (tuple): Each is (min, max) for the respective axis
-        resolution (int): Number of points along each axis
+        mni_img (nib.Nifti1Image): Loaded MNI image with affine
+        resolution (int): Step size in voxel units (1 = full resolution)
 
     Returns:
         grid_values (np.ndarray): 3D array of interpolated expression values
-        X, Y, Z (np.ndarray): 3D meshgrid arrays for coordinates
+        X, Y, Z (np.ndarray): 3D meshgrid arrays in MNI space (millimeters)
     """
-    # Create 1D axes
-    x = np.linspace(*x_range, resolution*int(x_range[1]-x_range[0]))
-    y = np.linspace(*y_range, resolution*int(y_range[1]-y_range[0]))
-    z = np.linspace(*z_range, resolution*int(z_range[1]-z_range[0]))
+    import numpy as np
 
-    # Create 3D grid
-    X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
+    affine = mni_img.affine
+    shape = mni_img.shape
 
-    # Flatten the grid for interpolation
-    points = np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
+    # Create grid of voxel indices
+    i = np.arange(0, shape[0], resolution)
+    j = np.arange(0, shape[1], resolution)
+    k = np.arange(0, shape[2], resolution)
 
-    # Interpolate
-    values = interp_func(points)
+    I, J, K = np.meshgrid(i, j, k, indexing='ij')
 
-    # Reshape back to 3D
-    grid_values = values.reshape((resolution*int(x_range[1]-x_range[0]), resolution*int(y_range[1]-y_range[0]), 
-                                  resolution*int(z_range[1]-z_range[0])))
+    # Flatten and convert voxel indices to world (MNI) coordinates
+    vox_coords = np.column_stack((I.ravel(), J.ravel(), K.ravel(), np.ones(I.size)))
+    world_coords = vox_coords @ affine.T
+    world_coords = world_coords[:, :3]  # Drop the homogeneous coordinate
+
+    # Interpolate at world coordinates
+    values = interp_func(world_coords)
+
+    # Reshape to grid
+    grid_shape = (len(i), len(j), len(k))
+    grid_values = values.reshape(grid_shape)
+
+    # Also reshape world coordinate grids for optional visualization
+    X = world_coords[:, 0].reshape(grid_shape)
+    Y = world_coords[:, 1].reshape(grid_shape)
+    Z = world_coords[:, 2].reshape(grid_shape)
 
     return grid_values, X, Y, Z
 
@@ -145,8 +153,6 @@ def plot_volumetrics(gene_name, mni_volume, gene_vols, sections=[80, 100, 60]):
     fig.tight_layout()
     return fig
 
-interp = interpolate_expression_3d(coords, single_gene)
-
 # Define bounding box from your coordinates
 #x_min, x_max = coords['x'].min(), coords['x'].max()
 #y_min, y_max = coords['y'].min(), coords['y'].max()
@@ -158,22 +164,76 @@ mni_output_path = os.path.join(directory1, 'MNI152_T1_1mm.nii.gz')
 print(f"Loading MNI atlas from {mni_output_path}")
 mni_img = nb.load(mni_output_path)
 mni_vol = np.array(mni_img.dataobj)
+affine = mni_img.affine
 
-x_min, x_max = np.ceil(-mni_vol.shape[0]/2), np.ceil(mni_vol.shape[0]/2)
-y_min, y_max = np.ceil(-mni_vol.shape[1]/2), np.ceil(mni_vol.shape[1]/2)
-z_min, z_max = np.ceil(-mni_vol.shape[2]/2), np.ceil(mni_vol.shape[2]/2)
+interp = interpolate_expression_3d(coords, single_gene)
 
-# Create the grid
-grid_values, X, Y, Z = make_3d_interpolated_grid(
+grid_values, X, Y, Z = make_3d_interpolated_grid_mni(
     interp_func=interp,
-    x_range=(x_min, x_max),
-    y_range=(y_min, y_max),
-    z_range=(z_min, z_max),
-    resolution=1
+    mni_img=mni_img,
+    resolution=1  # adjust if needed
 )
 
-# Plot
+# Plot interpolated expression map 
 fig = plot_volumetrics(gene_name, mni_vol, grid_values, sections=[80, 100, 60])
+plt.show()
+
+def get_point_density(coords,search_radius,search_k,mni_img,resolution=1):
+    """
+    Generate a 3D grid of interpolated gene expression values aligned to MNI image.
+
+    Parameters:
+        interp_func (callable): Interpolator function from interpolate_expression_3d
+        mni_img (nib.Nifti1Image): Loaded MNI image with affine
+        resolution (int): Step size in voxel units (1 = full resolution)
+
+    Returns:
+        grid_values (np.ndarray): 3D array of interpolated expression values
+        X, Y, Z (np.ndarray): 3D meshgrid arrays in MNI space (millimeters)
+    """
+
+    affine = mni_img.affine
+    shape = mni_img.shape
+
+    # Create grid of voxel indices
+    i = np.arange(0, shape[0], resolution)
+    j = np.arange(0, shape[1], resolution)
+    k = np.arange(0, shape[2], resolution)
+
+    I, J, K = np.meshgrid(i, j, k, indexing='ij')
+
+    # Flatten and convert voxel indices to world (MNI) coordinates
+    vox_coords = np.column_stack((I.ravel(), J.ravel(), K.ravel(), np.ones(I.size)))
+    world_coords = vox_coords @ affine.T
+    world_coords = world_coords[:, :3]  # Drop the homogeneous coordinate
+
+    # Reshape to grid
+    grid_shape = (len(i), len(j), len(k))
+
+    # Also reshape world coordinate grids for optional visualization
+    X = world_coords[:, 0].reshape(grid_shape)
+    Y = world_coords[:, 1].reshape(grid_shape)
+    Z = world_coords[:, 2].reshape(grid_shape)
+
+    grid_points = np.column_stack([
+        X.ravel(),  # shape (N,)
+        Y.ravel(),
+        Z.ravel()
+    ])  # shape (N, 3)
+
+    # Build KD-tree
+    tree = cKDTree(coords)
+
+    distances, indices = tree.query(grid_points, k=search_k)
+    points_within_r = [sum(d < search_radius) for d in distances]
+    min_distance = np.array(points_within_r).reshape(X.shape) 
+
+    return min_distance
+
+min_distance_vol = get_point_density(coords=coords,search_radius=10,search_k=10,mni_img=mni_img,resolution=1)
+
+# Plot sample density map
+fig = plot_volumetrics(gene_name, mni_vol, min_distance_vol, sections=[80, 100, 60])
 plt.show()
 
 chk=1

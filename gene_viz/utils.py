@@ -20,6 +20,22 @@ def get_data_path():
     
     return data_path
 
+def get_michack_data_path():
+    """
+    Returns the path to the michack data directory.
+    The michack data directory is expected to be at the root level of the gene_viz package.
+    """
+    # Get the current file's directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Navigate to the root directory of the gene_viz package
+    root_dir = os.path.abspath(os.path.join(current_dir, '..'))
+    
+    # Define the michack data directory
+    michack_data_path = os.path.join(root_dir, 'michack_project_data')
+    
+    return michack_data_path
+
 
 import nibabel as nb
 import numpy as np
