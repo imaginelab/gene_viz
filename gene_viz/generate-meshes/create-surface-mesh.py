@@ -6,16 +6,12 @@ import pandas as pd
 import os
 import sys
 # Get the current file's directory
-# os.chdir('/Users/lenadorfschmidt/Documents/KCL/MIC-HACK2025/gene_viz/gene_viz/generate-meshes')
 current_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(current_dir)
 
-# parent_dir = '/Users/lenadorfschmidt/Documents/KCL/MIC-HACK2025/gene_viz/gene_viz'
-# sys.path.append(parent_dir)
 # Add the parent directory so we can use utils
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import save_mesh_geometry
-
 
 
 def generate_mesh(data, label, label_name):
@@ -24,6 +20,7 @@ def generate_mesh(data, label, label_name):
     # Select corresponding voxels
     mask = (data == label)
 
+    # Consider using this if you want to skip small labels
     # if np.sum(mask) < 20:  # less than 100 voxels
     #    print(f"Skipping label {label} ({label_name}), too few voxels.")
     #   continue
@@ -46,7 +43,8 @@ def generate_mesh(data, label, label_name):
 
     return mesh, smoothed_mesh
 
-plot_it=True
+# Can use this to create png screenshots of the meshes
+plot_it=False
 
 if not os.path.exists('mesh-png'):
     os.makedirs('mesh-png')
@@ -57,8 +55,6 @@ if not os.path.exists('mesh-ply'):
 # Load segmentation
 nii = nib.load("aparc+aseg.mni152.v2.nii")
 data = nii.get_fdata()
-
-# To self, this is how you see all label values: np.unique(data).astype(int)
 
 # Read in look up table to be able to look up label names
 lut_df = pd.read_csv(
@@ -77,8 +73,10 @@ for label in np.unique(data).astype(int):
     label_name = lut_df[lut_df["ID"] == label]["Name"].values[0]
     print('Running label number: ' + str(label) + '; Label name: ' + label_name)
 
+    # Generate mesh
     mesh, smoothed_mesh = generate_mesh(data, label, label_name)
 
+    # Create corrds/face dictionary
     surf_dict = {
         'coords': np.array(smoothed_mesh.points),  # numpy array of points (N,3)
         'faces': np.array(smoothed_mesh.faces.reshape(-1, 4)[:, 1:] ) # skip the count number before each face
@@ -99,9 +97,6 @@ for label in np.unique(data).astype(int):
         plotter.add_mesh(smoothed_mesh)
         plotter.screenshot("mesh-png/" + label_name + "smoothed_mesh_smoothed.png")
         plotter.close()
-
-
-
 
 
 print('Done')
