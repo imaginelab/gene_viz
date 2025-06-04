@@ -5,14 +5,7 @@ import pyvista as pv
 import pandas as pd
 import os
 import sys
-# Get the current file's directory
-current_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(current_dir)
-
-# Add the parent directory so we can use utils
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import save_mesh_geometry
-
+from gene_viz.utils import save_mesh_geometry
 
 def generate_mesh(data, label, label_name):
     """ Generate a mesh for a specific label in the segmentation data.
@@ -49,8 +42,9 @@ plot_it=False
 if not os.path.exists('mesh-png'):
     os.makedirs('mesh-png')
 
-if not os.path.exists('mesh-ply'):
-    os.makedirs('mesh-ply')
+# If you have run the download script, the data folder will already exist
+if not os.path.exists('../../data/'):
+    os.makedirs('../../data/')
 
 # Load segmentation
 nii = nib.load("aparc+aseg.mni152.v2.nii")
@@ -83,7 +77,7 @@ for label in np.unique(data).astype(int):
     }
 
     # Save mesh to file
-    outpath='mesh-ply/' + label_name + '_meshfile.ply'
+    outpath='../../data/' + label_name + '_meshfile.ply'
     save_mesh_geometry(outpath, surf_dict)
 
     if plot_it==True:
