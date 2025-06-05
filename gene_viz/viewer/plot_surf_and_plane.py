@@ -1,6 +1,7 @@
 
 # import libraries
 from matplotlib_surface_plotting import plot_surf
+from gene_viz.utils import load_mesh_geometry
 import numpy as np
 
 
@@ -83,3 +84,28 @@ def plot_surf_and_plane(mesh, mesh_overlay=None, mri_img=None, slice_i=0, slice_
           alpha_colour=alpha,
           **kwargs
          )
+    
+def concatenate_meshes(mesh_files, f_explode, overlays=None):
+    vertices = []
+    faces = []
+    overlay = []
+    for i, mesh_file in enumerate(mesh_files): 
+        # load the mesh
+        mesh = load_mesh_geometry(mesh_file)
+        if i==0:
+            # add the vertices and faces of the first mesh
+            vertices = mesh['coords'] + (mesh['coords'].mean(axis=0)) * f_explode
+            faces = mesh['faces']
+            if overlays is None:
+                overlay = np.ones(len(mesh['coords']))*1
+            else: 
+                overlay = overlays[i]
+        else:
+            # add the vertices and faces of the other meshes
+            faces = np.vstack([faces, mesh['faces']+len(vertices)])
+            vertices = np.vstack([vertices,  mesh['coords']+ (mesh['coords'].mean(axis=0)) * f_explode])
+            if overlays is None:
+                overlay = np.hstack([overlay, np.ones(len(mesh['coords']))*(i+2)])
+            else: 
+                overlay = np.hstack([overlay, overlays[i]])
+    return vertices, faces, overlay
