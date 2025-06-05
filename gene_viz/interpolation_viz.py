@@ -70,7 +70,8 @@ def make_3d_interpolated_grid_mni(samples, sample_coords, interp_func, mni_img, 
 
     return grid_values, X, Y, Z
 
-def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, orientation=2, alpha_mask=None):
+def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, orientation=2, 
+                                 alpha_mask=None, gene_cmap='turbo'):
 
     if alpha_mask is None:
         # mask gene expression for visualisation
@@ -92,11 +93,11 @@ def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, o
         axes[0].axis('off')
 
         axes[1].imshow(mni_section, cmap='Greys_r')
-        axes[1].imshow(gene_im_mask, cmap='turbo')
+        axes[1].imshow(gene_im_mask, cmap=gene_cmap)
         axes[1].axis('off')
 
         axes[2].imshow(mni_section, cmap='Greys_r', vmin=100, vmax=255)
-        axes[2].imshow(gene_im_mask, cmap='turbo', alpha=0.5)
+        axes[2].imshow(gene_im_mask, cmap=gene_cmap, alpha=0.5)
         axes[2].axis('off')
 
         fig.tight_layout()
@@ -127,20 +128,19 @@ def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, o
         else:
             alpha_slice = 0.5  # Default fixed transparency
 
-        alpha_slice_mri = alpha_slice * 0.66 # So we can see the mri
+        alpha_slice_mri = alpha_slice * 0.66 # So we can see the whole mri 
 
         # Plot MNI background only
         axes[0].imshow(mni_section, cmap='Greys_r', vmin=100, vmax=255)
         axes[0].axis('off')
 
-        # Plot overlay without transparency
-        #axes[1].imshow(mni_section, cmap='Greys_r')
-        axes[1].imshow(gene_im_mask, cmap='turbo', alpha=alpha_slice)
+        # Plot overlay without transparency of MNI
+        axes[1].imshow(gene_im_mask, cmap=gene_cmap, alpha=alpha_slice)
         axes[1].axis('off')
 
         # Plot overlay with variable transparency
         axes[2].imshow(mni_section, cmap='Greys_r', vmin=100, vmax=255)
-        axes[2].imshow(gene_im_mask, cmap='turbo', alpha=alpha_slice_mri)
+        axes[2].imshow(gene_im_mask, cmap=gene_cmap, alpha=alpha_slice_mri)
         axes[2].axis('off')
 
         fig.tight_layout()
