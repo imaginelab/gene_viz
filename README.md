@@ -27,6 +27,9 @@ pip install -e .
 
 ## Download the gene expression data
 
+Download the data from: https://drive.google.com/file/d/1AGIcfsJ3sjG856I7vDKGcoGOGj8xKTHt/view?usp=sharing
+After unzipping, please put the "michack_project_data" directory in the location as the "gene_viz" library directory.
+
 ## Get the cortical and subcortical mesh files
 
 1. Download the FSLR cortical mesh by running `python gene_viz/downloaders/download_cortical_meshes.py`. This will generate a folder `gene_viz/data`, and download the FSLR `fs_LR.32k.<hemisphere>.pial.surf.gii` mesh files into it.
