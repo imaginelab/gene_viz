@@ -5,7 +5,7 @@ import pyvista as pv
 import pandas as pd
 import os
 import sys
-from gene_viz.utils import save_mesh_geometry, get_data_path
+from gene_viz.utils import save_mesh_geometry, get_data_path, ras_array2coords
 
 def generate_mesh(data, label, label_name):
     """ Generate a mesh for a specific label in the segmentation data.
@@ -70,15 +70,16 @@ for label in np.unique(data).astype(int):
 
     # Generate mesh
     mesh, smoothed_mesh = generate_mesh(data, label, label_name)
+    coords =ras_array2coords(nii,np.array(smoothed_mesh.points))
 
     # Create corrds/face dictionary
     surf_dict = {
-        'coords': np.array(smoothed_mesh.points),  # numpy array of points (N,3)
+        'coords': coords,  # numpy array of points (N,3)
         'faces': np.array(smoothed_mesh.faces.reshape(-1, 4)[:, 1:] ) # skip the count number before each face
     }
 
     # Save mesh to file
-    outpath=os.path.join(data_path, label_name + '_meshfile.ply')
+    outpath=os.path.join(data_path, label_name + '_meshfile.surf.gii')
     save_mesh_geometry(outpath, surf_dict)
 
     if plot_it==True:
