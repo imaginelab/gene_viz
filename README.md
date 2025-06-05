@@ -23,8 +23,16 @@ And install in environment
 pip install -e . 
 ```
 
-#currently we are using fs LR surface meshes. A bit too smooth but they'll do for now.
-#it's possible some MNI152 tailored meshes fit the MNI anatomy better, but not dealing with that now.
+### Getting started
+
+## Download the gene expression data
+
+## Get the cortical and subcortical mesh files
+
+1. Download the FSLR cortical mesh by running `python gene_viz/download_meshes.py`. This will generate a folder `gene_viz/data`, and download the FSLR `fs_LR.32k.<hemisphere>.pial.surf.gii` mesh files into it.
+2. Generate the regional mesh files for the APARC and ASEG regions in MNI format by running `python gene_viz/generate-meshes/create-surface-mesh.py`. This will create a single mesh file `<region>_meshfile.ply` for each region and save them in `gene_viz/data`. 
+
+As a side note: Currently we are using fs LR surface meshes, they are a bit too smooth but they'll do for now. In the future, we would like to generate more tailored MNI152 meshes fit the MNI anatomy better. Further, the APARC and ASEG region meshes have still have some holes, likely due to the thin cortical band of the template we used. Future work should fix this.
 
 ## Example images
 expression_point_density (red is 10 points within 10mm):
