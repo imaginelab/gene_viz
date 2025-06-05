@@ -75,7 +75,9 @@ def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, o
     if alpha_mask is None:
         # mask gene expression for visualisation
         # Set to NaN where mni_volume is 0
+        mni_volume = np.float32(mni_volume)
         gene_vols[mni_volume == 0] = np.nan
+        mni_volume[mni_volume == 0] = np.nan
 
         fig, axes = plt.subplots(1, 3, figsize=(30, 30))
         axes[1].set_title(f'Spatial bulk expression: {gene_name}', fontsize=20)
@@ -103,7 +105,9 @@ def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, o
     else:
 
         # Mask gene expression where MNI volume is zero
+        mni_volume = np.float32(mni_volume)
         gene_vols[mni_volume == 0] = np.nan
+        mni_volume[ mni_volume == 0 ] = np.nan
 
         fig, axes = plt.subplots(1, 3, figsize=(30, 10))  # One row of 3 plots
         axes[1].set_title(f'Spatial bulk expression: {gene_name}', fontsize=20)
@@ -190,6 +194,29 @@ def get_point_density(coords,search_radius,search_k,mni_img,resolution=1):
 
     distances, indices = tree.query(grid_points, k=search_k)
     points_within_r = [sum(d < search_radius) for d in distances]
-    min_distance = np.array(points_within_r).reshape(X.shape) 
+    min_distance_vol = np.array(points_within_r).reshape(X.shape) 
 
-    return min_distance
+    min_distance_vol = min_distance_vol.astype(np.float32)
+
+    # Plot sample density map
+    alpha_mask = (min_distance_vol - np.nanmin(min_distance_vol)) / (
+        np.nanmax(min_distance_vol) - np.nanmin(min_distance_vol)
+    )
+    alpha_mask[np.isnan(alpha_mask)] = 0 
+
+    return min_distance_vol, alpha_mask
+    
+
+def make_alpha_map_from_point_density(min_distance_vol):
+    
+    # Plot sample density map
+    alpha_mask = (min_distance_vol - np.nanmin(min_distance_vol)) / (
+        np.nanmax(min_distance_vol) - np.nanmin(min_distance_vol)
+    )
+    alpha_mask[np.isnan(alpha_mask)] = 0 
+
+    return alpha_mask
+
+
+def show_figure(fig):
+    plt.show()
