@@ -1,27 +1,24 @@
+#imports
+from gene_viz.utils import get_data_path, load_mesh_geometry
+import os
+from gene_viz.data_loader import load_data
+from gene_viz.interpolation.interpolation_core import interpolate
+
+# Specify the gene - Konrad
+gene_name = 'PVALB'
 # Load gene expression data - Konrad
 
-from gene_viz.data_loader import load_data
-
-gene_name = 'PVALB'
-
+#load in samples and coordinates
 coords, samples = load_data(gene_name)
 
-# Select the gene - Konrad
-#done
-
-# Specify gene name - Konrad
-#done
 
 # Load in meshes - Konrad, Lena
 
-from gene_viz.utils import get_data_path, load_mesh_geometry
-import os
 cortical_mesh_file_path = os.path.join(get_data_path(),'fs_LR.32k.L.pial.surf.gii')
 mesh = load_mesh_geometry(cortical_mesh_file_path)
 
 # Interpolate gene data to meshes - Konrad, Lena
 
-from gene_viz.interpolation.interpolation_core import interpolate
 interpolated_values = interpolate(samples,coords, mesh['coords'])
 
 print(interpolated_values)
