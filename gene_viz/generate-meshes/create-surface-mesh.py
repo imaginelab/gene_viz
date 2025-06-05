@@ -5,7 +5,7 @@ import pyvista as pv
 import pandas as pd
 import os
 import sys
-from gene_viz.utils import save_mesh_geometry
+from gene_viz.utils import save_mesh_geometry, get_data_path
 
 def generate_mesh(data, label, label_name):
     """ Generate a mesh for a specific label in the segmentation data.
@@ -38,21 +38,22 @@ def generate_mesh(data, label, label_name):
 
 # Can use this to create png screenshots of the meshes
 plot_it=False
-
-if not os.path.exists('mesh-png'):
-    os.makedirs('mesh-png')
+data_path = get_data_path()
+mesh_png_path = os.path.join(data_path,'..', 'mesh-png')
+if not os.path.exists(os.path.join(data_path,'..','mesh-png')) and plot_it==True:
+    os.makedirs(os.path.join(data_path,'..','mesh-png'))
 
 # If you have run the download script, the data folder will already exist
-if not os.path.exists('../../data/'):
-    os.makedirs('../../data/')
+if not os.path.exists(data_path):
+    os.makedirs(data_path)
 
 # Load segmentation
-nii = nib.load("aparc+aseg.mni152.v2.nii")
+gen_mesh_path = os.path.join(data_path,'..', 'gene_viz', 'generate-meshes')
+nii = nib.load(os.path.join(gen_mesh_path,"aparc+aseg.mni152.v2.nii"))
 data = nii.get_fdata()
 
 # Read in look up table to be able to look up label names
-lut_df = pd.read_csv(
-    'FreeSurferColorLUT.txt',
+lut_df = pd.read_csv(os.path.join(gen_mesh_path, 'FreeSurferColorLUT.txt'),
     delim_whitespace=True,
     comment='#',
     header=None,
@@ -77,19 +78,19 @@ for label in np.unique(data).astype(int):
     }
 
     # Save mesh to file
-    outpath='../../data/' + label_name + '_meshfile.ply'
+    outpath=os.path.join(data_path, label_name + '_meshfile.ply')
     save_mesh_geometry(outpath, surf_dict)
 
     if plot_it==True:
         # Save mesh to file
         plotter = pv.Plotter(off_screen=True)
         plotter.add_mesh(mesh)
-        plotter.screenshot("mesh-png/" + label_name + "smoothed_mesh.png")
+        plotter.screenshot(os.path.join(mesh_png_path,  label_name + "smoothed_mesh.png"))
         plotter.close()
 
         plotter = pv.Plotter(off_screen=True)
         plotter.add_mesh(smoothed_mesh)
-        plotter.screenshot("mesh-png/" + label_name + "smoothed_mesh_smoothed.png")
+        plotter.screenshot(os.path.join(mesh_png_path,  label_name + "smoothed_mesh_smoothed.png"))
         plotter.close()
 
 
