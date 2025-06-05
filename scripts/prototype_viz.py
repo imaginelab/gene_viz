@@ -1,5 +1,5 @@
 #imports
-from gene_viz.utils import get_data_path, load_mesh_geometry
+from gene_viz.utils import get_data_path, load_mesh_geometry, get_michack_data_path
 import os
 from gene_viz.data_loader import load_data
 from gene_viz.interpolation.interpolation_core import interpolate
@@ -22,7 +22,7 @@ mesh = load_mesh_geometry(cortical_mesh_file_path)
 interpolated_values = interpolate(samples,coords, mesh['coords'])
 
 # Load in MRI - Jack
-mri_file_path = os.path.join(get_data_path(), 'MNI152_T1_1mm.nii.gz')
+mri_file_path = os.path.join(get_michack_data_path(), 'MNI152_T1_1mm.nii.gz')
 mni_img = nb.load(mri_file_path)
 
 # Interpolate gene data to MRI - Jack
