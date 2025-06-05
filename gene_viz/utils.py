@@ -57,8 +57,9 @@ def ras_array2coords(mri_img, ras_array):
     M = mri_img.affine[:3, :3]
     abc = mri_img.affine[:3, 3]
     coords = ras_arr.dot(M.T) + abc
+    return coords
 
-    
+
 def load_mgh(filename):
     """ import mgh file using nibabel. returns flattened data array"""
     mgh_file=nb.load(filename)
