@@ -190,6 +190,28 @@ def get_point_density(coords,search_radius,search_k,mni_img,resolution=1):
 
     distances, indices = tree.query(grid_points, k=search_k)
     points_within_r = [sum(d < search_radius) for d in distances]
-    min_distance = np.array(points_within_r).reshape(X.shape) 
+    min_distance_vol = np.array(points_within_r).reshape(X.shape) 
 
-    return min_distance
+    min_distance_vol = min_distance_vol.astype(np.float32)
+
+    # Plot sample density map
+    alpha_mask = (min_distance_vol - np.nanmin(min_distance_vol)) / (
+        np.nanmax(min_distance_vol) - np.nanmin(min_distance_vol)
+    )
+    alpha_mask[np.isnan(alpha_mask)] = 0 
+
+    return min_distance_vol, alpha_mask
+    
+
+def make_alpha_map_from_point_density(min_distance_vol):
+    
+    # Plot sample density map
+    alpha_mask = (min_distance_vol - np.nanmin(min_distance_vol)) / (
+        np.nanmax(min_distance_vol) - np.nanmin(min_distance_vol)
+    )
+    alpha_mask[np.isnan(alpha_mask)] = 0 
+
+    return alpha_mask
+
+def show_figure(fig):
+    plt.show()
