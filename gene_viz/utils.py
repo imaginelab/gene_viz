@@ -40,6 +40,25 @@ def get_michack_data_path():
 import nibabel as nb
 import numpy as np
 
+def ras_array2coords(mri_img, ras_array):
+    """
+    Convert an array of RAS coordinates (shape N×3) to real-world coordinates.
+
+    Parameters:
+        mri_img: NIfTI image with affine matrix
+        ras_array (np.ndarray): Array of shape (N,3) representing voxel RAS coords
+
+    Returns:
+        coords (np.ndarray): Array of shape (N,3) with real-world coordinates
+    """
+    ras_arr = np.asarray(ras_array)
+    if ras_arr.ndim != 2 or ras_arr.shape[1] != 3:
+        raise ValueError("ras_array must be an (N,3) array")
+    M = mri_img.affine[:3, :3]
+    abc = mri_img.affine[:3, 3]
+    coords = ras_arr.dot(M.T) + abc
+
+    
 def load_mgh(filename):
     """ import mgh file using nibabel. returns flattened data array"""
     mgh_file=nb.load(filename)
@@ -287,14 +306,16 @@ def save_mesh_geometry(fname,surf_dict):
         raise ValueError('fname must be a filename and surf_dict must be a dictionary')
 
 def write_gifti(surf_mesh, coords, faces):
-    coord_array = nb.gifti.GiftiDataArray(data=coords,
+    coord_array = nb.gifti.GiftiDataArray(data=coords.astype(np.float32),
                                        intent=nb.nifti1.intent_codes[
                                            'NIFTI_INTENT_POINTSET'])
-    face_array = nb.gifti.GiftiDataArray(data=faces,
+    face_array = nb.gifti.GiftiDataArray(data=faces.astype(np.int32),
                                       intent=nb.nifti1.intent_codes[
                                            'NIFTI_INTENT_TRIANGLE'])
     gii = nb.gifti.GiftiImage(darrays=[coord_array, face_array])
-    nb.gifti.write(gii, surf_mesh)
+
+    # Save using nibabel.save()
+    nb.save(gii, surf_mesh)
 
 
 def save_obj(surf_mesh,coords,faces):
