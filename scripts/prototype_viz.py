@@ -21,10 +21,42 @@ mesh = load_mesh_geometry(cortical_mesh_file_path)
 
 interpolated_values = interpolate(samples,coords, mesh['coords'])
 
-print(interpolated_values)
 # Load in MRI - Jack
-# Interpolate gene data to MRI slice - Jack
+mri_file_path = os.path.join(get_data_path(), 'MNI152_T1_1mm.nii.gz')
+mni_img = nb.load(mri_file_path)
+
+# Interpolate gene data to MRI - Jack
+#interpolated_volume, density_volume = interpolate_mri(samples, coords, mni_img,return_density=True)
+# 
+# 
+#visualise volume
+#define slice and axis
+#plot_volume(interpolated_volume, mni_img, slice_index=slice_index,density_volume=density_volume,
+#             axis='z', cmap='turbo', title=f'{gene_name} expression in MNI space')
+
+
 # Visualise data in meshes - Mathilde
+#plot_surf_and_plane(mesh['coords'], mesh['faces'], interpolated_values, slice_index=0,
+#   slice_axis='z', cmap='turbo', title=f'{gene_name} expression on cortical mesh',)
+
+
+#get the MNI coordinates
+mni_coords = np.array(np.where(mni_img.get_fdata() > 0)).T
+#convert to real world coordinates
+mni_coords_xyz = nb.affines.apply_affine(mni_img.affine, mni_coords)
+# Interpolate gene data to MRI coordinates - Jack
+interpolated_volume_values = interpolate(samples, coords, mni_coords_xyz)
+
+#map back to volume
+interpolated_volume = np.zeros(mni_img.shape)
+for i, coord in enumerate(mni_coords):
+    x, y, z = coord
+    if 0 <= x < mni_img.shape[0] and 0 <= y < mni_img.shape[1] and 0 <= z < mni_img.shape[2]:
+        interpolated_volume[x, y, z] = interpolated_volume_values[i]
+
+
+
+# Interpolate gene data to MRI slice - Jack
 # Visualise data in slice of MRI - Jack
 
 
