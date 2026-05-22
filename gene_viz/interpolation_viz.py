@@ -71,7 +71,12 @@ def make_3d_interpolated_grid_mni(samples, sample_coords, interp_func, mni_img, 
     return grid_values, X, Y, Z
 
 def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, orientation=2, 
-                                 alpha_mask=None, gene_cmap='turbo'):
+                                 alpha_mask=None, gene_cmap='turbo', vmin=None, vmax=None):
+    
+    if vmin is None:
+        vmin = np.nanmin(gene_vols)
+    if vmax is None:
+        vmax = np.nanmax(gene_vols)
 
     if alpha_mask is None:
         # mask gene expression for visualisation
@@ -93,11 +98,11 @@ def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, o
         axes[0].axis('off')
 
         axes[1].imshow(mni_section, cmap='Greys_r')
-        axes[1].imshow(gene_im_mask, cmap=gene_cmap)
+        axes[1].imshow(gene_im_mask, cmap=gene_cmap, vmin=vmin, vmax=vmax)
         axes[1].axis('off')
 
         axes[2].imshow(mni_section, cmap='Greys_r', vmin=100, vmax=255)
-        axes[2].imshow(gene_im_mask, cmap=gene_cmap, alpha=0.5)
+        axes[2].imshow(gene_im_mask, cmap=gene_cmap, alpha=0.5, vmin=vmin, vmax=vmax)
         axes[2].axis('off')
 
         fig.tight_layout()
@@ -135,12 +140,14 @@ def plot_volumetrics_plane_alpha(gene_name, mni_volume, gene_vols, section=60, o
         axes[0].axis('off')
 
         # Plot overlay without transparency of MNI
-        axes[1].imshow(gene_im_mask, cmap=gene_cmap, alpha=alpha_slice)
+        axes[1].imshow(gene_im_mask, cmap=gene_cmap, alpha=alpha_slice, vmin=vmin,
+                         vmax=vmax)
         axes[1].axis('off')
 
         # Plot overlay with variable transparency
         axes[2].imshow(mni_section, cmap='Greys_r', vmin=100, vmax=255)
-        axes[2].imshow(gene_im_mask, cmap=gene_cmap, alpha=alpha_slice_mri)
+        axes[2].imshow(gene_im_mask, cmap=gene_cmap, alpha=alpha_slice_mri,
+                         vmin=vmin, vmax=vmax)
         axes[2].axis('off')
 
         fig.tight_layout()
